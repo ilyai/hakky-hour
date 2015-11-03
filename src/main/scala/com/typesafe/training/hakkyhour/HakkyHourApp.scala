@@ -49,7 +49,7 @@ class HakkyHourApp(system: ActorSystem) extends Terminal {
   }
 
   def createHakkyHour(): ActorRef =
-    system.deadLetters // TODO Create a HakkyHour top-level actor named "hakky-hour"
+    system.actorOf(HakkyHour.props, "hakky-hour")
 
   @tailrec
   final def commandLoop(): Unit =
