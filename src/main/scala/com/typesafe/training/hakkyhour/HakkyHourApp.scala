@@ -6,6 +6,7 @@ package com.typesafe.training.hakkyhour
 
 import akka.actor._
 import akka.event.Logging
+import com.typesafe.training.hakkyhour.HakkyHour.CreateGuest
 import scala.annotation.tailrec
 import scala.collection.breakOut
 import scala.io.StdIn
@@ -42,12 +43,12 @@ class HakkyHourApp(system: ActorSystem) extends Terminal {
 
   val hakkyHour = createHakkyHour()
 
-  system.actorOf(Props(new Actor with ActorLogging {
-    hakkyHour ! "Nice bar!"
-    override def receive = {
-      case msg: String => log.info(msg)
-    }
-  }))
+  //  system.actorOf(Props(new Actor with ActorLogging {
+  //    hakkyHour ! "Nice bar!"
+  //    override def receive = {
+  //      case msg: String => log.info(msg)
+  //    }
+  //  }))
 
   def run(): Unit = {
     log.warning(f"{} running%nEnter commands into the terminal, e.g. `q` or `quit`", getClass.getSimpleName)
@@ -76,7 +77,8 @@ class HakkyHourApp(system: ActorSystem) extends Terminal {
     }
 
   def createGuest(count: Int, drink: Drink, isStubborn: Boolean, maxDrinkCount: Int): Unit =
-    () // TODO Send CreateGuest to HakkyHour count number of times
+    for (i <- 1 to count)
+      hakkyHour ! CreateGuest
 
   def getStatus(): Unit =
     () // TODO Ask HakkyHour for the status and log the result on completion
