@@ -42,6 +42,8 @@ class HakkyHourApp(system: ActorSystem) extends Terminal {
 
   val hakkyHour = createHakkyHour()
 
+  hakkyHour ! "Nice bar!"
+
   def run(): Unit = {
     log.warning(f"{} running%nEnter commands into the terminal, e.g. `q` or `quit`", getClass.getSimpleName)
     commandLoop()
