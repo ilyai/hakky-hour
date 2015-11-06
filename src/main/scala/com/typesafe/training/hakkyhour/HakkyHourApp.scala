@@ -4,7 +4,7 @@
 
 package com.typesafe.training.hakkyhour
 
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor._
 import akka.event.Logging
 import scala.annotation.tailrec
 import scala.collection.breakOut
@@ -42,7 +42,12 @@ class HakkyHourApp(system: ActorSystem) extends Terminal {
 
   val hakkyHour = createHakkyHour()
 
-  hakkyHour ! "Nice bar!"
+  system.actorOf(Props(new Actor with ActorLogging {
+    hakkyHour ! "Nice bar!"
+    override def receive = {
+      case msg: String => log.info(msg)
+    }
+  }))
 
   def run(): Unit = {
     log.warning(f"{} running%nEnter commands into the terminal, e.g. `q` or `quit`", getClass.getSimpleName)

@@ -14,6 +14,6 @@ class HakkyHour extends Actor with ActorLogging {
   log.debug("{} has opened!", "Hakky Hour")
 
   def receive: Receive = {
-    case _ => log.info("Welcome to Hakky Hour!")
+    case _ => sender() ! "Welcome to Hakky Hour!"
   }
 }
