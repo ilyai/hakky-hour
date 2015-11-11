@@ -1,14 +1,15 @@
 package com.typesafe.training.hakkyhour
 
-import akka.actor.{ Props, ActorLogging, Actor }
+import akka.actor.{ ActorRef, Props, ActorLogging, Actor }
 import com.typesafe.training.hakkyhour.HakkyHour.CreateGuest
+import scala.concurrent.duration._
 
 /**
  * Created by iig on 11/3/15.
  */
 
 object HakkyHour {
-  case object CreateGuest
+  case class CreateGuest(favoriteDrink: Drink)
 
   def props = Props(new HakkyHour())
 }
@@ -16,10 +17,18 @@ object HakkyHour {
 class HakkyHour extends Actor with ActorLogging {
   log.debug("{} has opened!", "Hakky Hour")
 
+  val waiter = createWaiter
+
   def receive: Receive = {
-    case CreateGuest => createGuest()
+    case CreateGuest(favoriteDrink) => createGuest(waiter, favoriteDrink)
   }
 
-  def createGuest() =
-    context.actorOf(Guest.props)
+  def createWaiter =
+    context.actorOf(Waiter.props, "waiter")
+
+  def createGuest(waiter: ActorRef, favoriteDrink: Drink) =
+    context.actorOf(Guest.props(waiter, favoriteDrink,
+      Duration(
+        context.system.settings.config.getDuration("hakky-hour.guest.finish-drink-duration", MILLISECONDS),
+        MILLISECONDS)))
 }
