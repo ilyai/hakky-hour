@@ -17,13 +17,14 @@ object HakkyHour {
 class HakkyHour extends Actor with ActorLogging {
   log.debug("{} has opened!", "Hakky Hour")
 
-  val waiter = createWaiter
+  val waiter = createWaiter()
+  val barkeeper = createBarkeeper()
 
   def receive: Receive = {
     case CreateGuest(favoriteDrink) => createGuest(waiter, favoriteDrink)
   }
 
-  def createWaiter =
+  def createWaiter() =
     context.actorOf(Waiter.props, "waiter")
 
   def createGuest(waiter: ActorRef, favoriteDrink: Drink) =
@@ -31,4 +32,10 @@ class HakkyHour extends Actor with ActorLogging {
       Duration(
         context.system.settings.config.getDuration("hakky-hour.guest.finish-drink-duration", MILLISECONDS),
         MILLISECONDS)))
+
+  def createBarkeeper() =
+    context.actorOf(Barkeeper.props(
+      Duration(
+        context.system.settings.config.getDuration("hakky-hour.guest.finish-drink-duration", MILLISECONDS),
+        MILLISECONDS)), "barkeeper")
 }
