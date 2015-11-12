@@ -1,6 +1,6 @@
 package com.typesafe.training.hakkyhour
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ ActorRef, Actor, Props }
 import com.typesafe.training.hakkyhour.Barkeeper.{ DrinkPrepared, PrepareDrink }
 
 import scala.concurrent.duration.FiniteDuration
@@ -10,8 +10,8 @@ import scala.concurrent.duration.FiniteDuration
  */
 
 object Barkeeper {
-  case class PrepareDrink(drink: Drink, guest: Guest)
-  case class DrinkPrepared(drink: Drink, guest: Guest)
+  case class PrepareDrink(drink: Drink, guest: ActorRef)
+  case class DrinkPrepared(drink: Drink, guest: ActorRef)
 
   def props(prepareDrinkDuration: FiniteDuration) =
     Props(new Barkeeper(prepareDrinkDuration))

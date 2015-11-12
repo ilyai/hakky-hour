@@ -57,7 +57,8 @@ class HakkyHourApp(system: ActorSystem) extends Terminal {
   }
 
   def createHakkyHour(): ActorRef =
-    system.actorOf(HakkyHour.props, "hakky-hour")
+    system.actorOf(HakkyHour.props(
+      system.settings.config.getInt("hakky-hour.max-drink-count")), "hakky-hour")
 
   @tailrec
   final def commandLoop(): Unit =
@@ -78,7 +79,7 @@ class HakkyHourApp(system: ActorSystem) extends Terminal {
 
   def createGuest(count: Int, drink: Drink, isStubborn: Boolean, maxDrinkCount: Int): Unit =
     for (i <- 1 to count)
-      hakkyHour ! CreateGuest(drink)
+      hakkyHour ! CreateGuest(drink, isStubborn)
 
   def getStatus(): Unit =
     () // TODO Ask HakkyHour for the status and log the result on completion
