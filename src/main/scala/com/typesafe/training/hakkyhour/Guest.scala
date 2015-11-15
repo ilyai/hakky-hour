@@ -1,7 +1,7 @@
 package com.typesafe.training.hakkyhour
 
 import akka.actor.{ ActorRef, ActorLogging, Props, Actor }
-import com.typesafe.training.hakkyhour.Guest.DrinkFinished
+import com.typesafe.training.hakkyhour.Guest.{ DrunkException, DrinkFinished }
 import com.typesafe.training.hakkyhour.HakkyHour.NoMoreDrinks
 import com.typesafe.training.hakkyhour.Waiter.{ ServeDrink, DrinkServed }
 import scala.concurrent.duration._
@@ -14,14 +14,15 @@ import scala.concurrent.duration.FiniteDuration
 
 object Guest {
   private case object DrinkFinished
+  case object DrunkException extends IllegalStateException("Too many drinks!")
 
   def props(waiter: ActorRef, favoriteDrink: Drink, finishDrinkDuration: FiniteDuration,
-    isStubborn: Boolean) =
-    Props(new Guest(waiter, favoriteDrink, finishDrinkDuration, isStubborn: Boolean))
+    isStubborn: Boolean, maxDrinkCount: Int) =
+    Props(new Guest(waiter, favoriteDrink, finishDrinkDuration, isStubborn: Boolean, maxDrinkCount: Int))
 }
 
 class Guest(waiter: ActorRef, favoriteDrink: Drink, finishDrinkDuration: FiniteDuration,
-    isStubborn: Boolean) extends Actor with ActorLogging {
+    isStubborn: Boolean, maxDrinkCount: Int) extends Actor with ActorLogging {
   import context.dispatcher
 
   var drinkCount = 0
@@ -37,6 +38,8 @@ class Guest(waiter: ActorRef, favoriteDrink: Drink, finishDrinkDuration: FiniteD
       log.debug("Enjoying my {}. yummy {}!", drinkCount, drink)
       context.system.scheduler.scheduleOnce(finishDrinkDuration, self, DrinkFinished)
     case DrinkFinished =>
+      if (drinkCount > maxDrinkCount)
+        throw DrunkException
       waiter ! ServeDrink(favoriteDrink)
     case NoMoreDrinks =>
       if (isStubborn) {

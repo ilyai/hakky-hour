@@ -10,7 +10,7 @@ import scala.concurrent.duration._
  */
 
 object HakkyHour {
-  case class CreateGuest(favoriteDrink: Drink, isStubborn: Boolean)
+  case class CreateGuest(favoriteDrink: Drink, isStubborn: Boolean, maxDrinkCount: Int)
   case class ApproveDrink(drink: Drink, guest: ActorRef)
   case object NoMoreDrinks
 
@@ -27,15 +27,15 @@ class HakkyHour(maxDrinkCount: Int) extends Actor with ActorLogging {
   var guestDrinkCount = Map[ActorRef, Int]()
 
   def receive: Receive = {
-    case CreateGuest(favoriteDrink, isStubborn) =>
-      context.watch(createGuest(waiter, favoriteDrink, isStubborn))
+    case CreateGuest(favoriteDrink, isStubborn, maxDrinkCount) =>
+      context.watch(createGuest(waiter, favoriteDrink, isStubborn, maxDrinkCount))
     case ApproveDrink(drink, guest) =>
       val drinkCount = guestDrinkCount.getOrElse(guest, 0)
       if (drinkCount < maxDrinkCount) {
         guestDrinkCount += guest -> (drinkCount + 1)
         barkeeper.forward(PrepareDrink(drink, guest))
       } else if (drinkCount == maxDrinkCount) {
-        log.info("Sorry, {}, but we won't serve you more than {} drinks!", guest, maxDrinkCount)
+        log.info("Sorry, {}, but we won't serve you more than {} drinks!", guest.path.name, maxDrinkCount)
         guestDrinkCount += guest -> (drinkCount + 1)
         guest ! NoMoreDrinks
       } else {
@@ -43,17 +43,17 @@ class HakkyHour(maxDrinkCount: Int) extends Actor with ActorLogging {
       }
     case Terminated(guest) =>
       guestDrinkCount -= guest
-      log.info("Thanks, {}, for being our guest!", guest)
+      log.info("Thanks, {}, for being our guest!", guest.path.name)
   }
 
   def createWaiter() =
     context.actorOf(Waiter.props(self), "waiter")
 
-  def createGuest(waiter: ActorRef, favoriteDrink: Drink, isStubborn: Boolean) =
+  def createGuest(waiter: ActorRef, favoriteDrink: Drink, isStubborn: Boolean, maxDrinkCount: Int) =
     context.actorOf(Guest.props(waiter, favoriteDrink,
       Duration(
         context.system.settings.config.getDuration("hakky-hour.guest.finish-drink-duration", MILLISECONDS),
-        MILLISECONDS), isStubborn))
+        MILLISECONDS), isStubborn, maxDrinkCount))
 
   def createBarkeeper() =
     context.actorOf(Barkeeper.props(
