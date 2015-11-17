@@ -22,7 +22,7 @@ object HakkyHour {
     Props(new HakkyHour(maxDrinkCount: Int))
 }
 
-class HakkyHour(maxDrinkCount: Int) extends Actor with ActorLogging {
+class HakkyHour(maxDrinkCount: Int) extends Actor with ActorLogging with SettingsActor {
   log.debug("{} has opened!", "Hakky Hour")
 
   override val supervisorStrategy =
@@ -61,19 +61,14 @@ class HakkyHour(maxDrinkCount: Int) extends Actor with ActorLogging {
   }
 
   def createWaiter() =
-    context.actorOf(Waiter.props(self,
-      context.system.settings.config.getInt("hakky-hour.waiter.max-complaint-count")), "waiter")
+    context.actorOf(Waiter.props(self, settings.maxComplaintCount), "waiter")
 
   def createGuest(waiter: ActorRef, favoriteDrink: Drink, isStubborn: Boolean, maxDrinkCount: Int) =
     context.actorOf(Guest.props(waiter, favoriteDrink,
-      Duration(
-        context.system.settings.config.getDuration("hakky-hour.guest.finish-drink-duration", MILLISECONDS),
-        MILLISECONDS), isStubborn, maxDrinkCount))
+      settings.finishDrinkDuration, isStubborn, maxDrinkCount))
 
   def createBarkeeper() =
     context.actorOf(Barkeeper.props(
-      Duration(
-        context.system.settings.config.getDuration("hakky-hour.guest.finish-drink-duration", MILLISECONDS),
-        MILLISECONDS),
-      context.system.settings.config.getInt("hakky-hour.barkeeper.accuracy")), "barkeeper")
+      settings.prepareDrinkDuration,
+      settings.barkkeperAccuracy), "barkeeper")
 }

@@ -29,9 +29,7 @@ object HakkyHourApp {
     val name = opts.getOrElse("name", "hakky-hour")
     //Set up Akka actor system
     val system: ActorSystem = ActorSystem(s"$name-system")
-    val statusTimeout = Duration(
-      system.settings.config.getDuration("hakky-hour.status-timeout", MILLISECONDS), MILLISECONDS)
-    val hakkyHourApp = new HakkyHourApp(system, statusTimeout)
+    val hakkyHourApp = new HakkyHourApp(system, Settings(system).statusTimeout)
     hakkyHourApp.run()
   }
 
@@ -67,7 +65,7 @@ class HakkyHourApp(system: ActorSystem, implicit val statusTimeout: Timeout) ext
 
   def createHakkyHour(): ActorRef =
     system.actorOf(HakkyHour.props(
-      system.settings.config.getInt("hakky-hour.max-drink-count")), "hakky-hour")
+      Settings(system).maxDrinkCount), "hakky-hour")
 
   @tailrec
   final def commandLoop(): Unit =
