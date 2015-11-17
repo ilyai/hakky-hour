@@ -3,7 +3,7 @@ package com.typesafe.training.hakkyhour
 import akka.actor._
 import com.typesafe.training.hakkyhour.Barkeeper.PrepareDrink
 import com.typesafe.training.hakkyhour.Guest.DrunkException
-import com.typesafe.training.hakkyhour.HakkyHour.{ NoMoreDrinks, ApproveDrink, CreateGuest }
+import com.typesafe.training.hakkyhour.HakkyHour.{ GetStatus, NoMoreDrinks, ApproveDrink, CreateGuest }
 import com.typesafe.training.hakkyhour.Waiter.FrustratedException
 import scala.concurrent.duration._
 
@@ -14,7 +14,9 @@ import scala.concurrent.duration._
 object HakkyHour {
   case class CreateGuest(favoriteDrink: Drink, isStubborn: Boolean, maxDrinkCount: Int)
   case class ApproveDrink(drink: Drink, guest: ActorRef)
+  case class Status(guestCount: Int)
   case object NoMoreDrinks
+  case object GetStatus
 
   def props(maxDrinkCount: Int) =
     Props(new HakkyHour(maxDrinkCount: Int))
@@ -54,6 +56,8 @@ class HakkyHour(maxDrinkCount: Int) extends Actor with ActorLogging {
     case Terminated(guest) =>
       guestDrinkCount -= guest
       log.info("Thanks, {}, for being our guest!", guest.path.name)
+    case GetStatus =>
+      sender ! HakkyHour.Status(guestDrinkCount.size)
   }
 
   def createWaiter() =

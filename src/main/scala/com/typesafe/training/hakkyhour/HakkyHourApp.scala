@@ -6,10 +6,15 @@ package com.typesafe.training.hakkyhour
 
 import akka.actor._
 import akka.event.Logging
-import com.typesafe.training.hakkyhour.HakkyHour.CreateGuest
+import com.typesafe.training.hakkyhour.HakkyHour.{ GetStatus, CreateGuest }
 import scala.annotation.tailrec
 import scala.collection.breakOut
+import scala.concurrent.duration.Duration
 import scala.io.StdIn
+import scala.concurrent.duration._
+import akka.util.Timeout
+
+import scala.util.{ Failure, Success }
 
 object HakkyHourApp {
 
@@ -24,8 +29,9 @@ object HakkyHourApp {
     val name = opts.getOrElse("name", "hakky-hour")
     //Set up Akka actor system
     val system: ActorSystem = ActorSystem(s"$name-system")
-
-    val hakkyHourApp = new HakkyHourApp(system)
+    val statusTimeout = Duration(
+      system.settings.config.getDuration("hakky-hour.status-timeout", MILLISECONDS), MILLISECONDS)
+    val hakkyHourApp = new HakkyHourApp(system, statusTimeout)
     hakkyHourApp.run()
   }
 
@@ -37,7 +43,10 @@ object HakkyHourApp {
       System.setProperty(key substring 2, value)
 }
 
-class HakkyHourApp(system: ActorSystem) extends Terminal {
+class HakkyHourApp(system: ActorSystem, implicit val statusTimeout: Timeout) extends Terminal {
+  import akka.pattern.ask
+  import akka.pattern.pipe
+  import system.dispatcher
 
   val log = Logging(system, getClass.getName)
 
@@ -82,5 +91,10 @@ class HakkyHourApp(system: ActorSystem) extends Terminal {
       hakkyHour ! CreateGuest(drink, isStubborn, maxDrinkCount)
 
   def getStatus(): Unit =
-    () // TODO Ask HakkyHour for the status and log the result on completion
+    (hakkyHour ? HakkyHour.GetStatus).mapTo[HakkyHour.Status].onComplete {
+      case Success(status) =>
+        log.info("Number of guests: {}", status.guestCount)
+      case Failure(error) =>
+        log.error(error.toString)
+    }
 }
