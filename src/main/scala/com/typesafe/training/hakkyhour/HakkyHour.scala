@@ -2,6 +2,7 @@ package com.typesafe.training.hakkyhour
 
 import akka.actor._
 import com.typesafe.training.hakkyhour.Barkeeper.PrepareDrink
+import com.typesafe.training.hakkyhour.Guest.DrunkException
 import com.typesafe.training.hakkyhour.HakkyHour.{ NoMoreDrinks, ApproveDrink, CreateGuest }
 import scala.concurrent.duration._
 
@@ -20,6 +21,11 @@ object HakkyHour {
 
 class HakkyHour(maxDrinkCount: Int) extends Actor with ActorLogging {
   log.debug("{} has opened!", "Hakky Hour")
+
+  override val supervisorStrategy =
+    OneForOneStrategy() {
+      case DrunkException => SupervisorStrategy.Stop
+    }
 
   val waiter = createWaiter()
   val barkeeper = createBarkeeper()
