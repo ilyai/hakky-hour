@@ -13,14 +13,15 @@ object Barkeeper {
   case class PrepareDrink(drink: Drink, guest: ActorRef)
   case class DrinkPrepared(drink: Drink, guest: ActorRef)
 
-  def props(prepareDrinkDuration: FiniteDuration) =
-    Props(new Barkeeper(prepareDrinkDuration))
+  def props(prepareDrinkDuration: FiniteDuration, accuracy: Int) =
+    Props(new Barkeeper(prepareDrinkDuration, accuracy))
 }
 
-class Barkeeper(prepareDrinkDuration: FiniteDuration) extends Actor {
+class Barkeeper(prepareDrinkDuration: FiniteDuration, accuracy: Int) extends Actor {
   def receive = {
     case PrepareDrink(drink, guest) =>
       busy(prepareDrinkDuration)
-      sender ! DrinkPrepared(drink, guest)
+      sender ! DrinkPrepared(
+        if (util.Random.nextInt(100) < accuracy) drink else Drink.anyOther(drink), guest)
   }
 }

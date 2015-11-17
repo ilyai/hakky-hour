@@ -3,7 +3,7 @@ package com.typesafe.training.hakkyhour
 import akka.actor.{ ActorRef, ActorLogging, Props, Actor }
 import com.typesafe.training.hakkyhour.Guest.{ DrunkException, DrinkFinished }
 import com.typesafe.training.hakkyhour.HakkyHour.NoMoreDrinks
-import com.typesafe.training.hakkyhour.Waiter.{ ServeDrink, DrinkServed }
+import com.typesafe.training.hakkyhour.Waiter.{ Complaint, ServeDrink, DrinkServed }
 import scala.concurrent.duration._
 
 import scala.concurrent.duration.FiniteDuration
@@ -35,8 +35,12 @@ class Guest(waiter: ActorRef, favoriteDrink: Drink, finishDrinkDuration: FiniteD
   override def receive = {
     case DrinkServed(drink) =>
       drinkCount += 1
-      log.debug("Enjoying my {}. yummy {}!", drinkCount, drink)
-      context.system.scheduler.scheduleOnce(finishDrinkDuration, self, DrinkFinished)
+      if (drink == favoriteDrink) {
+        log.debug("Enjoying my {}. yummy {}!", drinkCount, drink)
+        context.system.scheduler.scheduleOnce(finishDrinkDuration, self, DrinkFinished)
+      } else {
+        waiter ! Complaint(drink)
+      }
     case DrinkFinished =>
       if (drinkCount > maxDrinkCount)
         throw DrunkException

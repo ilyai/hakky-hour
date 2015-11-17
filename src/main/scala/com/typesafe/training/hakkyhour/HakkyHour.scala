@@ -4,6 +4,7 @@ import akka.actor._
 import com.typesafe.training.hakkyhour.Barkeeper.PrepareDrink
 import com.typesafe.training.hakkyhour.Guest.DrunkException
 import com.typesafe.training.hakkyhour.HakkyHour.{ NoMoreDrinks, ApproveDrink, CreateGuest }
+import com.typesafe.training.hakkyhour.Waiter.FrustratedException
 import scala.concurrent.duration._
 
 /**
@@ -25,6 +26,9 @@ class HakkyHour(maxDrinkCount: Int) extends Actor with ActorLogging {
   override val supervisorStrategy =
     OneForOneStrategy() {
       case DrunkException => SupervisorStrategy.Stop
+      case FrustratedException(drink, guest) =>
+        barkeeper.tell(PrepareDrink(drink, guest), sender())
+        SupervisorStrategy.Restart
     }
 
   val waiter = createWaiter()
@@ -53,7 +57,8 @@ class HakkyHour(maxDrinkCount: Int) extends Actor with ActorLogging {
   }
 
   def createWaiter() =
-    context.actorOf(Waiter.props(self), "waiter")
+    context.actorOf(Waiter.props(self,
+      context.system.settings.config.getInt("hakky-hour.waiter.max-complaint-count")), "waiter")
 
   def createGuest(waiter: ActorRef, favoriteDrink: Drink, isStubborn: Boolean, maxDrinkCount: Int) =
     context.actorOf(Guest.props(waiter, favoriteDrink,
@@ -65,5 +70,6 @@ class HakkyHour(maxDrinkCount: Int) extends Actor with ActorLogging {
     context.actorOf(Barkeeper.props(
       Duration(
         context.system.settings.config.getDuration("hakky-hour.guest.finish-drink-duration", MILLISECONDS),
-        MILLISECONDS)), "barkeeper")
+        MILLISECONDS),
+      context.system.settings.config.getInt("hakky-hour.barkeeper.accuracy")), "barkeeper")
 }
